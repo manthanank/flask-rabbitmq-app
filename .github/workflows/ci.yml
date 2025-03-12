@@ -1,0 +1,57 @@
+name: Flask RabbitMQ CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      rabbitmq:
+        image: rabbitmq:management
+        ports:
+          - 5672:5672
+          - 15672:15672
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Tests
+        run: |
+          pytest tests/
+
+      - name: Build Docker Image
+        run: docker build -t flask-rabbitmq-app .
+
+      - name: Run Docker Compose
+        run: docker-compose up -d --build
+
+      - name: Verify Flask API
+        run: |
+          sleep 5
+          curl -X POST http://localhost:5000/send -H "Content-Type: application/json" -d '{"message": "GitHub Actions Test"}'
+          
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      - name: Push Docker Image
+        run: |
+          docker tag flask-rabbitmq-app manthanank/flask-rabbitmq-app:latest
+          docker push manthanank/flask-rabbitmq-app:latest
