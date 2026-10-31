@@ -12,13 +12,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    services:
-      rabbitmq:
-        image: rabbitmq:management
-        ports:
-          - 5672:5672
-          - 15672:15672
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -45,7 +38,7 @@ jobs:
 
       - name: Verify Flask API
         run: |
-          sleep 5
+          sleep 20
           curl -X POST http://localhost:5000/send -H "Content-Type: application/json" -d '{"message": "GitHub Actions Test"}'
 
       - name: Log in to Docker Hub
